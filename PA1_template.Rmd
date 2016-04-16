@@ -1,25 +1,103 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
+title: "PA1.Template"
+author: "slc"
+date: "12 Apr 2016"
 output: 
-  html_document:
-    keep_md: true
+  html_document: 
+    keep_md: yes
 ---
+###Loading and preprocessing the data
+```{r}
+require(knitr)
+require(dplyr)
+require(lubridate)
+require(lattice)
+
+opts_chunk$set(echo=TRUE,results="show")
+activity <- read.csv("~/Dropbox/John hopkins/reproducible research/activity.csv")
+head(activity)
+str(activity)
+```
+###What is the mean total number of steps taken per day?
+*Total number of steps by day*
+```{r, echo=TRUE}
+sumsteps<-activity %>%
+filter(!is.na(steps)) %>%
+group_by(date) %>%
+select(steps)%>%
+summarise(steps= sum(steps) )%>%
+print(sumsteps)
+
+with(sumsteps,hist(steps,breaks=10,col = "steelblue",main="Mean steps per day",sub="Plot 1:no adjustment for missing values"))
+```
+
+*Mean and Median steps per day*
+```{r}
+mean(sumsteps$steps)
+median(sumsteps$steps)
+```
+
+###What is the average daily activity pattern?
+```{r}
+act_na<-subset(activity,!is.na(steps))
+actbyday<-tapply(act_na$steps, act_na$interval, mean)
+plot( actbyday, type = "l",col="blue", xlab = "5 Minute Interval", main = "Mean Daily Activity",sub = "Plot 2" ,ylab = "Average  steps per interval")
+```
+
+*Which  mean 5 minute interval contains the maximum number of steps?*
+```{r}
+actbyday[which.max(actbyday)]
+
+```
+
+The 5 minute interval between 855 and 900 ( 8.55-9.0.clock) has the maximum mean number of steps (steps=835) .
+
+###Imputing  missing values
+*Total number of missing values$
+```{r}
+activity2<- activity
+missvalues<- is.na(activity2$steps)
+sum(missvalues)
+```
 
 
-## Loading and preprocessing the data
+```{r}
+#replacing missing values with interval mean
+meanstepsint<- tapply(activity2$steps, activity2$interval, mean, na.rm=TRUE, simplify = TRUE)
+activity2$steps[missvalues] <- meanstepsint[as.character(activity2$interval[missvalues])]
+```
+*Total steps per day with missing values imputed*
+```{r}
+sumsteps2<-activity2 %>%
+group_by(date) %>%
+select(steps)%>%
+summarise(steps= sum(steps) )%>%
+print(sumsteps2)
+```
+*Mean and Median steps per day for imputed data set*
+```{r}
+mean(sumsteps2$steps)
+median(sumsteps2$steps)
+```
+ 
+ Mean total daily steps are  identical before and after imputing missing  values. The only change is that before  correction  the median  was slightly lower than the mean , indicating a very slight skew in the data. After imputing missing values the median is equal the mean. Perhaps this isnot surprising considering  that missing values  were replaced  by the mean of the missing  interval.
 
+```{r}
+with(sumsteps2,hist(steps,breaks=10,col = "steelblue",main="Mean steps per day",sub="Plot 3:missing values imputed"))
+```
 
+The main difference between plots 1 and 3(other than the greater frequencies reflecting more values ) is that the height of the most frequent value appears increased relative to the other values. This also is not surprising considering the technique used to replace values.
 
-## What is mean total number of steps taken per day?
+###Are there differences in activity patterns between weekdays and weekends?
+```{r}
+#meansteps for  weekends vs weekdays 
+activity2<- activity2%>%
+mutate(day= ifelse(wday(activity2$date)==7 | wday(activity2$date)==1, "Weekend", "Weekday"))
+activity_day_week<- activity2%>%
+group_by(interval, day)%>%
+summarise(meansteps = mean(steps))
 
+xyplot(meansteps ~ interval | day, data=activity_day_week, type="l",main="Weekend & Weekday Activity Patterns",sub="Plot 4",layout=c(1,2))
+```
 
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+We can see that subjects tend to be active earlier on  weekdays than weekends , but  are more physically active throughout the day at weekends than weekdays, and furthermore more  active until slightly later in the day.
