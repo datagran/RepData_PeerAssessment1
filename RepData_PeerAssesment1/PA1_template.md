@@ -247,3 +247,7 @@ xyplot(meansteps ~ interval | day, data=activity_day_week, type="l",main="Weeken
 ![](PA1_template_files/figure-html/unnamed-chunk-11-1.png)
 
 We can see that subjects tend to be active earlier on  weekdays than weekends , but  are more physically active throughout the day at weekends than weekdays, and furthermore more  active until slightly later in the day.
+note later-alternative imputing:
+data <- merge(data, dataInterval)
+data <- mutate(data, stepsImputed = ifelse(is.na(steps), meanSteps, steps), meanSteps = NULL)
+data <- arrange(data, date, interval)
